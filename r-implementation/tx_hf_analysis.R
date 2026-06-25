@@ -3,7 +3,7 @@
 # (positions from InpatientDataDictionary1Q2019.pdf). Outcome = log(LOS), risk-adjusted,
 # hospital = THCIC_ID. Runs SCS audit-budget (C), cluster ranking (D), symmetric flag, asymmetric tails (B).
 suppressWarnings(suppressMessages({
-  setwd("C:/Users/tomch/AIProjects/research/MIO LMM"); source("scs.R")
+  setwd(Sys.getenv("MIO_DIR", "C:/Users/tomch/AIProjects/research/MIO LMM")); source("scs.R")
 }))
 MIN_NK <- 25L
 d <- read.csv("data/tx/tx_hf_1q2019.csv", stringsAsFactors = FALSE,

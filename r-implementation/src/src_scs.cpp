@@ -121,6 +121,10 @@ struct FastCtx {
 static FastCtx build_ctx(const MatrixXd& X, const VectorXd& Y, int p_fix, int K, double mu) {
   FastCtx c; c.n = X.rows(); c.p_fix = p_fix; c.K = K; c.mu = mu;
   MatrixXd F = X.leftCols(p_fix);
+  // Small ridge mu on the FULL augmented design (fixed + selected), as in best-subset with ridge
+  // (Bertsimas-King-Mazumder). This conditions the selection objective; the reported coefficients come
+  // from an unpenalized refit, so the estimand is unchanged. Removing the fixed-block ridge is NOT
+  // cosmetic -- it shifts the local-search selection and changes the stability watch-list (NY 14 -> 4).
   MatrixXd FtF = F.transpose() * F; FtF.diagonal().array() += mu;
   c.B = FtF.inverse();
   c.FtY = F.transpose() * Y;

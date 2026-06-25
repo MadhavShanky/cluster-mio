@@ -1,53 +1,78 @@
-# Sparse Cluster Selection (SCS) — R/C++ implementation
+# clusterMIO — Sparse Cluster Selection for Linear Mixed Models
 
-An R/C++ implementation of sparse cluster selection in linear mixed models: an
+An R/C++ package for **sparse cluster selection** in linear mixed models: an
 $\ell_0$ (cardinality-constrained) selection of which cluster random effects are
-held nonzero, with the rest set to exactly zero. This is the scalable companion to
-the Julia prototype in the repository root (`clust_mio.jl`, `simul.jl`).
+held nonzero, with the rest set to exactly zero. The scalable companion to the
+Julia prototype in the repository root (`clust_mio.jl`, `simul.jl`).
 
-The solver profiles out the fixed effects once and exploits the disjoint support of
-the cluster dummies, so each candidate swap has a closed-form gain that costs
+The solver profiles out the fixed effects once and exploits the disjoint support
+of the cluster dummies, so each candidate swap has a closed-form gain that costs
 $O(p^2)$ to evaluate, independent of the sample size. It depends only on a C++
 linear-algebra library (RcppEigen) and requires no commercial optimizer.
-
-## Layout
-
-- `scs.R` — R API: `scs_fit()`, `stability()`, `audit_budget()`, `cluster_ranking()`.
-- `src_scs.cpp` — the C++ local-search solver (RcppEigen).
-- `sim/` — simulation study: data-generating processes (`dgp.R`, `dgp_hard.R`),
-  drivers (`run_sims.R`, `run_hard.R`, `run_demo_phase.R`, `run_smoke_realistic.R`),
-  the L0Learn head-to-head (`bench_l0learn.R`), and figure/table builders
-  (`figures.R`, `tables.R`, `theme_scs.R`).
-- Real-data analysis: `pull_sparcs_hf.R`, `tx_hf_analysis.R`, `add_inference.R`,
-  `realdata_sensitivity.R`, `figures_realdata.R` (hospital length-of-stay profiling,
-  New York SPARCS and Texas PUDF).
-- Validation / benchmarks: `validate_cpp.R`, `verify_fwl.R`, `verify_localsearch.R`,
-  `bench_speed.R`, `test_deliverables.R`.
-- `*.sh` — array-job scripts for running the simulation grid on a cluster.
 
 ## Install
 
 ```r
-install.packages(c("Rcpp", "RcppEigen"))
-Rcpp::sourceCpp("src_scs.cpp")
-source("scs.R")
+install.packages(c("Rcpp", "RcppEigen"))   # build-time dependencies
+# install.packages("remotes")
+remotes::install_github("MadhavShanky/cluster-mio", subdir = "r-implementation")
 ```
+
+The package lives in the `r-implementation/` subdirectory of the repo, hence the
+`subdir` argument. A C++ toolchain is required to compile from source (Rtools on
+Windows, the standard build tools on macOS/Linux). Optional: `rpart` (new-cluster
+prediction), `lme4` (the BLUP comparison in the analysis scripts).
 
 ## Quick start
 
 ```r
-fit  <- scs_fit(y, X, cluster, lambda = 15)   # select up to 15 deviating clusters
-stab <- stability(y, X, cluster, B = 100)     # bootstrap watch-list + expected-false-flag bound
-aud  <- audit_budget(y, X, cluster)           # deviation captured vs number of units reviewed
+library(clusterMIO)
+
+set.seed(1)
+K <- 30; nk <- 20; n <- K * nk
+cluster <- factor(rep(seq_len(K), each = nk))
+X <- matrix(rnorm(n * 2), n, 2)
+g <- numeric(K); g[c(5, 22)] <- c(5, -5)          # two deviating clusters
+y <- as.numeric(X %*% c(1, -1)) + g[as.integer(cluster)] + rnorm(n)
+
+fit <- scs_fit(X, y, cluster, lambda = 2)          # select up to 2 deviating clusters
+fit$selected                                       # -> "5", "22"
+
+stability(fit, B = 200L, pairing = "complementary")# CPSS watch-list + false-flag bound
+audit_budget(fit)                                  # deviation captured vs. units reviewed
+cluster_ranking(fit)                               # budget-path importance ordering
+predict(fit, newdata = matrix(rnorm(4), 2, 2))     # effect of a brand-new cluster (CART map)
 ```
+
+A runnable version is installed at
+`system.file("examples", "quickstart.R", package = "clusterMIO")`.
+
+## API
+
+| Function | Purpose |
+|---|---|
+| `scs_fit()` | Fit the L0 cluster-selection model (symmetric `lambda`, or asymmetric `c(worst, best)` tail budgets). |
+| `predict()` | New-cluster prediction via a supervised CART map from cluster-level features to the cluster effect. |
+| `stability()` | Subsampling stability selection: Meinshausen–Bühlmann or Shah–Samworth complementary-pairs (CPSS), with the expected-false-flag bound. |
+| `scs_path()` | Solve the symmetric problem along the budget path `lambda = 0..lambda_max`. |
+| `audit_budget()` | Decision-theoretic budget profile: deviation captured vs. number of clusters reviewed. |
+| `cluster_ranking()` | LARS-like importance ranking by budget at which each cluster first enters the active set. |
+| `scs_eps_sensitivity()` | Sensitivity of the selected set to the relative-ridge scale `eps`. |
 
 ## Reproducing the paper
 
-The simulation and analysis scripts reproduce every figure and table. Note that
-several scripts set an absolute working directory near the top (`setwd(...)`) and
-read/write under `data/`, `sim/results/`, and `figs/`; adjust the path to your
-checkout. Those generated directories are gitignored — the pull scripts
-(`pull_sparcs_hf.R`, `tx_hf_analysis.R`) fetch the public discharge data, and
-`sim/run_sims.R` regenerates `sim/results/`, after which `sim/figures.R` and
-`sim/tables.R` build the outputs. Both hospital datasets are public; for the Texas
-PUDF, follow its data-use-agreement terms.
+The simulation and real-data analysis scripts live at the top level of
+`r-implementation/` and in `sim/`. They are kept in the repository but are
+**excluded from the installed package** (`.Rbuildignore`): several set an absolute
+working directory and read/write under `data/`, `sim/results/`, and `figs/`, so
+they predate the package and load the source directly — adjust the paths to your
+checkout before running. Both hospital datasets (New York SPARCS, Texas PUDF) are
+public; for the Texas PUDF follow its data-use-agreement terms.
+
+See `PERFORMANCE.md` for the performance roadmap (profiled hot spots and the
+optimizations deferred behind a selected-set regression gate).
+
+## Reference
+
+A distribution-free mixed-integer optimization approach to hierarchical modelling
+of clustered and longitudinal data, arXiv:2302.03157.

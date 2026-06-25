@@ -62,7 +62,7 @@ pR2 <- ggplot(stabdf, aes(rank, freq, colour = grp)) +
   facet_wrap(~state, scales = "free_x") +
   scale_color_scs(name = NULL, labels = c("L0-MIO+stab" = "stable flag", "OLS" = "below threshold")) +
   labs(title = "Stability selection: bootstrap selection frequency per hospital",
-       subtitle = sprintf("B = 100 subsamples; dashed line = pi_thr = %.1f (Meinshausen-Buhlmann threshold)", PI_THR),
+       subtitle = sprintf("B = 400 complementary half-samples (200 pairs); dashed line = pi_thr = %.1f (false-inclusion threshold)", PI_THR),
        x = "hospital (ranked by selection frequency)", y = "selection frequency",
        caption = "Hospitals above the dashed line form the FDR-aware stable audit list. MB bound = expected number of false flags.") +
   theme_scs()

@@ -14,7 +14,7 @@ analyze <- function(rds, label) {
               label, length(y), K, length(fit$selected)))
 
   ## --- deliverable A: stability selection + MB expected-false-flag bound ---
-  st <- stability(fit, B = 100L, frac = 0.5, pi_thr = 0.6, seed = 1L)
+  st <- stability(fit, B = 400L, frac = 0.5, pi_thr = 0.6, seed = 1L, pairing = "complementary")
   cat(sprintf("Stability selection (B_used=%d, avg q=%.2f selected/subsample):\n", st$B_used, st$q))
   cat(sprintf("  MB bound on E[# false flags] at pi_thr=%.2f: %.2f\n", st$pi_thr, st$expected_false_flags_bound))
   conf <- intersect(fit$selected, st$flagged)

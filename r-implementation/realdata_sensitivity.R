@@ -2,7 +2,7 @@
 # Vary the fixed-effect (case-mix) specification and measure how the stable flagged set moves.
 # Outputs data/sparcs/sensitivity.csv : per spec, the stable watch-list size + Jaccard vs the full spec.
 suppressWarnings(suppressMessages({
-  setwd("C:/Users/tomch/AIProjects/research/MIO LMM"); source("scs.R")
+  setwd(Sys.getenv("MIO_DIR", "C:/Users/tomch/AIProjects/research/MIO LMM")); source("scs.R")
 }))
 d <- read.csv("data/sparcs/drg194_2024.csv", stringsAsFactors = FALSE)
 los <- suppressWarnings(as.numeric(gsub("[^0-9.]", "", d$length_of_stay)))
@@ -38,7 +38,7 @@ flag <- list(); rows <- list()
 for (nm in names(specs)) {
   X <- model.matrix(specs[[nm]], data = d)[, -1, drop = FALSE]
   fit <- scs_fit(X, y, fac, lambda = lam, n_restart = 6L, seed = 1L)
-  st  <- stability(fit, B = 100L, pi_thr = 0.8, seed = 1L)
+  st  <- stability(fit, B = 400L, pi_thr = 0.8, seed = 1L, pairing = "complementary")
   flag[[nm]] <- as.character(st$flagged)
   rows[[nm]] <- data.frame(spec = nm, p = ncol(X), n_flagged = length(st$flagged),
                            mb_bound = round(st$expected_false_flags_bound, 2),
@@ -48,6 +48,7 @@ for (nm in names(specs)) {
 }
 res <- do.call(rbind, rows)
 write.csv(res, "data/sparcs/sensitivity.csv", row.names = FALSE)
+saveRDS(flag, "data/sparcs/sensitivity_flags.rds")  # per-spec flagged ids, for flagged_table.R core marking
 # core = hospitals flagged under EVERY spec
 core <- Reduce(intersect, flag)
 cat(sprintf("\ncore watch-list (flagged under ALL %d specs): %d hospitals\n", length(specs), length(core)))
