@@ -1,0 +1,24 @@
+Package: clusterMIO
+Title: Sparse Cluster Selection for Linear Mixed Models
+Version: 0.1.0
+Authors@R: c(
+    person("Madhav", "Shanky", role = c("aut", "cph")),
+    person("Tom", "Chen", , "tomchen00@gmail.com", role = c("aut", "cre")))
+Description: An L0 (cardinality-constrained) selection of which cluster random
+    effects in a linear mixed model are held nonzero, with the rest set to
+    exactly zero. The solver profiles out the fixed effects and exploits the
+    disjoint support of the one-hot cluster dummies, so each candidate swap has a
+    closed-form gain that is independent of the sample size; it depends only on
+    'RcppEigen' and needs no commercial optimizer. Provides stability selection
+    (Meinshausen-Buhlmann and Shah-Samworth complementary-pairs), an audit-budget
+    profile, and a budget-path cluster ranking. Scalable companion to the Julia
+    prototype described in arXiv:2302.03157.
+License: GPL-3
+Encoding: UTF-8
+LinkingTo: Rcpp, RcppEigen
+Imports: Rcpp, stats, utils
+Suggests: rpart, lme4, testthat (>= 3.0.0)
+URL: https://github.com/MadhavShanky/cluster-mio
+BugReports: https://github.com/MadhavShanky/cluster-mio/issues
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
