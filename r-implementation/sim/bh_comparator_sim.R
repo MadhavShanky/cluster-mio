@@ -20,7 +20,18 @@ for (e in ex) if (is.call(e) && identical(e[[1]], as.name("<-")) && is.name(e[[2
                   as.character(e[[2]]) %in% c("lmm_fit", "cv_within")) eval(e)
 stopifnot(exists("lmm_fit"), exists("cv_within"))
 
-grid_cells <- expand.grid(K = c(100L, 300L), pi = c(0.05, 0.1, 0.2), delta = c(0.5, 1, 2), unequal = c(FALSE, TRUE))
+# SIM_DESIGN = base (36-cell grid below) | clustercv | highcorr (8-cell grids, unequal sizes):
+#   clustercv: X gains a cluster-level covariate with correlation 0.7 with the deviation indicator
+#   highcorr : rho_x = 0.95 (covariates vary mainly between clusters)
+# These are the designs in which the marginal |z| ranking misses the brute-force optimum (Table S1).
+design <- Sys.getenv("SIM_DESIGN", "base")
+grid_cells <- if (design == "base")
+  expand.grid(K = c(100L, 300L), pi = c(0.05, 0.1, 0.2), delta = c(0.5, 1, 2), unequal = c(FALSE, TRUE)) else
+  expand.grid(K = c(100L, 300L), pi = c(0.1, 0.2), delta = c(1, 2), unequal = TRUE)
+rho_x <- if (design == "highcorr") 0.95 else 0.5
+add_cluster_cov <- function(d, rho = 0.7) {
+  z <- as.numeric(d$gamma != 0); w <- rho * scale(z) + sqrt(1 - rho^2) * rnorm(length(z))
+  d$X <- cbind(d$X, w[as.integer(d$cluster)]); d }
 cid  <- as.integer(Sys.getenv("SIM_CELL", "1")); cell <- grid_cells[cid, ]
 R    <- as.integer(Sys.getenv("SIM_REPS", "100"))
 Bst  <- as.integer(Sys.getenv("SIM_B", "100"))
@@ -37,9 +48,10 @@ score <- function(sel, active) c(TP = length(intersect(sel, active)), FP = lengt
 
 rows <- vector("list", R)
 for (r in seq_len(R)) {
-  seed <- as.integer(7e5 * cid + r)
+  seed <- as.integer(7e5 * cid + r + switch(design, base = 0, clustercv = 5e7, highcorr = 1e8))
   d <- gen_scs(K = cell$K, nk = 20L, p = 5L, regime = "sparse", pi_active = cell$pi, delta = cell$delta,
-               rho_x = 0.5, unequal_nk = cell$unequal, seed = seed)
+               rho_x = rho_x, unequal_nk = cell$unequal, seed = seed)
+  if (design == "clustercv") d <- add_cluster_cov(d)
   K <- d$K; act <- d$active
   grid <- unique(pmax(0L, as.integer(round(K * c(0, 0.02, 0.05, 0.10, 0.20, 0.35, 0.5)))))
   lam <- cv_within(d, grid, seed = r)$lambda
@@ -62,7 +74,7 @@ for (r in seq_len(R)) {
     out$BLUP_top <- score(order(abs(b), decreasing = TRUE)[seq_len(lam)], act)
   }
   rows[[r]] <- do.call(rbind, lapply(names(out), function(m) data.frame(
-    cell = cid, K = cell$K, pi = cell$pi, delta = cell$delta, unequal = cell$unequal, rep = r, seed = seed,
+    design = design, cell = cid, K = cell$K, pi = cell$pi, delta = cell$delta, unequal = cell$unequal, rep = r, seed = seed,
     lambda = lam, n_active = length(act), method = m, TP = out[[m]][["TP"]], FP = out[[m]][["FP"]],
     n_sel = out[[m]][["n_sel"]], ref = if ("ref" %in% names(out[[m]])) out[[m]][["ref"]] else NA_real_)))
   if (r %% 10 == 0) cat(sprintf("  rep %d/%d done\n", r, R))

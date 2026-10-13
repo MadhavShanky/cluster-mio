@@ -14,8 +14,8 @@ environment variables and seeds.
 | Supp. S3.8 ridge and restart sensitivity | `sim/restart_robustcore_sim.R`, `scs_eps_sensitivity()` in `scs.R` |
 | Supp. S6 consistency check, subsampling scheme | `sim/consistency_sim.R`, `sim/subsample_scheme_sim.R`, `sim/aggregate_strengthen.R` |
 | Supp. S4 null calibration of the CPSS reference (Table S6) | `sim/null_pfer_calibration.R` |
-| Planted-signal calibration of the CPSS reference | `sim/planted_pfer_calibration.R` |
-| Per-cluster z-test (BH / Bonferroni) comparators | `sim/bh_comparator_sim.R` |
+| Supp. S4 planted-signal calibration | `sim/planted_pfer_calibration.R`, `sim/aggregate_planted.R` |
+| Table 2, Supp. S3.9 (per-cluster z-test comparators) | `sim/bh_comparator_sim.R`, `sim/aggregate_bh.R`, `sim/table_bh.R` |
 | Sec. 6 NY cohort, Figs. 5-6 | `pull_sparcs_hf.R`, `figures_realdata.R` |
 | Sec. 6 TX cohort | `tx_hf_analysis.R` |
 | Supp. S4 risk-adjustment sensitivity (Tables S4-S5) | `realdata_sensitivity.R`, `tx_sensitivity.R` |
