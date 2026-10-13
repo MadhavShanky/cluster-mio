@@ -25,3 +25,7 @@
 ^\.Rproj\.user$
 ^\.git$
 ^PERFORMANCE\.md$
+^REPRODUCE\.md$
+^audit_curve_splitval\.R$
+^tx_sensitivity\.R$
+^flagged_table\.R$
