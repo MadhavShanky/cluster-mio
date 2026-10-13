@@ -1,0 +1,22 @@
+# R session / build artifacts
+.Rhistory
+.RData
+.Rproj.user/
+*.o
+*.so
+*.dll
+*.rds
+
+# Generated data and results -- regenerate with the pull + simulation scripts
+r-implementation/data/
+r-implementation/sim/results/
+r-implementation/sim/figs/
+r-implementation/figs/
+
+# Compiled documents / LaTeX aux
+*.pdf
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
